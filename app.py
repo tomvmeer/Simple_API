@@ -28,15 +28,6 @@ def figure_builder():
     # Add surface trace
     fig.add_trace(go.Surface(z=df.values.tolist(), colorscale="Viridis"))
 
-    # Update plot sizing
-    fig.update_layout(
-        width=800,
-        height=900,
-        autosize=False,
-        margin=dict(t=0, b=0, l=0, r=0),
-        template="plotly_white",
-    )
-
     # Update 3D scene options
     fig.update_scenes(
         aspectratio=dict(x=1, y=1, z=0.7),
