@@ -19,61 +19,45 @@ cors = CORS(app)
 
 @app.route('/')
 def figure_builder():
-    # load dataset
-    df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/volcano.csv")
-
-    # create figure
+    # Create figure
     fig = go.Figure()
 
-    # Add surface trace
-    fig.add_trace(go.Surface(z=df.values.tolist(), colorscale="Viridis"))
-    # Update plot sizing
-    fig.update_layout(
-        height=700,
-        autosize=False,
-        margin=dict(t=100, b=0, l=0, r=0),
-    )
+    # Add traces, one for each slider step
+    for step in np.arange(0, 5, 0.1):
+        fig.add_trace(
+            go.Scatter(
+                visible=False,
+                line=dict(color="#00CED1", width=6),
+                name="𝜈 = " + str(step),
+                x=np.arange(0, 10, 0.01),
+                y=np.sin(step * np.arange(0, 10, 0.01))))
 
-    # Update 3D scene options
-    fig.update_scenes(
-        aspectratio=dict(x=1, y=1, z=0.7),
-        aspectmode="manual"
-    )
+    # Make 10th trace visible
+    fig.data[10].visible = True
 
-    # Add dropdown
-    fig.update_layout(
-        updatemenus=[
-            dict(
-                type="buttons",
-                direction="left",
-                buttons=list([
-                    dict(
-                        args=["type", "surface"],
-                        label="3D Surface",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=["type", "heatmap"],
-                        label="Heatmap",
-                        method="restyle"
-                    )
-                ]),
-                pad={"r": 10, "t": 10},
-                showactive=True,
-                x=0.11,
-                xanchor="left",
-                y=1.1,
-                yanchor="top"
-            ),
-        ]
-    )
+    # Create and add slider
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * len(fig.data)},
+                  {"title": "Slider switched to step: " + str(i)}],  # layout attribute
+        )
+        step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
 
-    # Add annotation
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "Frequency: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+
     fig.update_layout(
-        annotations=[
-            dict(text="Trace type:", showarrow=False,
-                 x=0, y=1.08, yref="paper", align="left")
-        ]
+        sliders=sliders,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+       modebar=dict(bgcolor='rgba(0,0,0,0)', color='gray', activecolor='white')
     )
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
