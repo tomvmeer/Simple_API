@@ -4,10 +4,12 @@ import plotly.graph_objects as go
 import plotly
 import numpy as np
 from sklearn.datasets import make_moons
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 import json
 from flask_cors import CORS
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'the quick brown fox jumps over the lazy dog'
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -16,39 +18,67 @@ cors = CORS(app)
 
 
 @app.route('/')
-def hello_world():
-    mesh_size = .02
-    margin = 0.25
+def figure_builder():
+    # load dataset
+    df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/volcano.csv")
 
-    # Load and split data
-    X, y = make_moons(noise=0.3, random_state=0)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y.astype(str), test_size=0.25, random_state=0)
+    # create figure
+    fig = go.Figure()
 
-    # Create a mesh grid on which we will run our model
-    x_min, x_max = X[:, 0].min() - margin, X[:, 0].max() + margin
-    y_min, y_max = X[:, 1].min() - margin, X[:, 1].max() + margin
-    xrange = np.arange(x_min, x_max, mesh_size)
-    yrange = np.arange(y_min, y_max, mesh_size)
-    xx, yy = np.meshgrid(xrange, yrange)
+    # Add surface trace
+    fig.add_trace(go.Surface(z=df.values.tolist(), colorscale="Viridis"))
 
-    # Create classifier, run predictions on grid
-    clf = KNeighborsClassifier(15, weights='uniform')
-    clf.fit(X, y)
-    Z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1]
-    Z = Z.reshape(xx.shape)
+    # Update plot sizing
+    fig.update_layout(
+        width=800,
+        height=900,
+        autosize=False,
+        margin=dict(t=0, b=0, l=0, r=0),
+        template="plotly_white",
+    )
 
-    # Plot the figure
-    fig = go.Figure(data=[
-        go.Contour(
-            x=xrange,
-            y=yrange,
-            z=Z,
-            colorscale='RdBu'
-        )
-    ])
+    # Update 3D scene options
+    fig.update_scenes(
+        aspectratio=dict(x=1, y=1, z=0.7),
+        aspectmode="manual"
+    )
+
+    # Add dropdown
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                buttons=list([
+                    dict(
+                        args=["type", "surface"],
+                        label="3D Surface",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["type", "heatmap"],
+                        label="Heatmap",
+                        method="restyle"
+                    )
+                ]),
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.11,
+                xanchor="left",
+                y=1.1,
+                yanchor="top"
+            ),
+        ]
+    )
+
+    # Add annotation
+    fig.update_layout(
+        annotations=[
+            dict(text="Trace type:", showarrow=False,
+                 x=0, y=1.08, yref="paper", align="left")
+        ]
+    )
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    print(graphJSON)
     return graphJSON
 
 
