@@ -27,6 +27,12 @@ def figure_builder():
 
     # Add surface trace
     fig.add_trace(go.Surface(z=df.values.tolist(), colorscale="Viridis"))
+    # Update plot sizing
+    fig.update_layout(
+        height=700,
+        autosize=False,
+        margin=dict(t=100, b=0, l=0, r=0),
+    )
 
     # Update 3D scene options
     fig.update_scenes(
